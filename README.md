@@ -1,102 +1,142 @@
-# Technical Requirements: Cloud Security Architect AI
-**Project Name:** `cloud-sec-arch-llm`
+# Cloud-Sec-Architect-AI
 
-**Version:** 1.0
-
-**Owner:** Cloud Security Architecture Team
-
-## 1. Executive Summary
-The objective is to fine-tune a Large Language Model (LLM) to function as a **Senior Cloud Security Architect**. Unlike generic models (ChatGPT/Claude), this model must specialize in:
-1.  **High-Fidelity Technical Guidance:** Specific configurations for AWS, Azure, GCP, Databricks, and Kubernetes.
-2.  **Compliance Alignment:** Mapping architectures to frameworks (NIST 800-53, ISO 27001, CIS Benchmarks).
-3.  **Context-Awareness:** Distinguishing between "Best Practice" (Vendor Agnostic) and "Implementation Details" (Vendor Specific).
+`Cloud-Sec-Architect-AI` is a specialized fine-tuning pipeline designed to create an AI model capable of functioning as a **Senior Cloud Security Architect**. Unlike generic LLMs, this model is rigorously trained on high-fidelity, vendor-agnostic documentation, threat frameworks, and infrastructure-as-code (IaC) standards. It excels at designing secure multi-cloud environments, performing gap analysis, and mapping technical implementations to compliance frameworks (NIST, CIS, ISO).
 
 ---
 
-## 2. Functional Requirements
+## 🚀 Key Features
 
-### 2.1 Core Capabilities
-* **Architectural Design:** The model must generate secure reference architectures (SRAs) based on user inputs (e.g., "Design a HIPAA-compliant data lake on Databricks").
-* **Gap Analysis:** The model must identify security gaps in provided snippets of infrastructure-as-code (Terraform/CloudFormation) or description.
-* **Compliance Mapping:** Responses must cite relevant controls (e.g., "This requires enabling AWS CloudTrail to satisfy ISO 27001 A.12.4").
-
-### 2.2 Persona & Tone
-* **Role:** Senior Security Architect.
-* **Tone:** Professional, authoritative, concise, and prescriptive.
-* **Safety:** The model must refuse to generate exploit code or "black hat" instructions.
+* **Multi-Cloud Expertise:** Deep knowledge of **AWS**, **Azure**, **GCP**, and **Kubernetes** security best practices.
+* **Compliance & Standards:** Trained on **NIST 800-53**, **CIS Benchmarks**, **OWASP Top 10**, and **MITRE ATT&CK** for cloud.
+* **Identity & IaC Focus:** Specialized modules for **Identity Architecture** (OIDC/SAML) and **Policy-as-Code** (Terraform/OPA).
+* **High-Fidelity Data Engine:** Uses a custom `trafilatura` + `MinHash` pipeline to harvest, clean, and deduplicate technical documentation, ensuring zero "marketing fluff" enters the training set.
+* **Reasoning-First Model:** Built on **Llama 3.1 8B Instruct**, optimized for complex architectural reasoning and "System 2" thinking.
 
 ---
 
-## 3. Data Pipeline Requirements ("The Data Engine")
+## 🛠️ Prerequisites
 
-### 3.1 Data Acquisition
-* **Sources:** Official documentation roots only.
-    * *Allowed:* `docs.aws.amazon.com`, `learn.microsoft.com`, `cloud.google.com`, `kubernetes.io`, `cisecurity.org`.
-    * *Excluded:* Blogs, forums (StackOverflow), Reddit, marketing landing pages.
-* **Tooling:** `trafilatura` for main-content extraction (ignoring navbars/footers).
-* **Volume:** Minimum 2,000 high-quality architectural documentation pages.
+### Hardware Requirements
 
-### 3.2 Data Engineering & Quality
-* **Deduplication:** Implementation of **MinHash LSH** (Locality Sensitive Hashing) to remove semantic duplicates across different URLs.
-* **Complexity Filter:** Content must meet a **Flesch-Kincaid Grade Level > 8** to ensure technical depth.
-* **Formatting:** Data must be stored in `JSONL` format with `instruction`, `input` (context/source), and `output` fields.
+* **Training:** NVIDIA GPU with **≥24GB VRAM** (RTX 3090, 4090, or A10G) recommended for efficient 4-bit LoRA training.
+* **Inference:** NVIDIA GPU with **≥12GB VRAM** (RTX 3060/4070) for 4-bit quantized inference.
+* **Disk Space:** ~50GB for datasets and model checkpoints.
 
----
+### Software Stack
 
-## 4. Model Specifications ("The Training Lab")
-
-### 4.1 Base Model Architecture
-* **Model ID:** `mistralai/Mistral-7B-Instruct-v0.3` (selected for sliding window attention and high reasoning benchmarks).
-* **Context Window:** 4096 tokens (training effective length: 2048 w/ packing).
-
-### 4.2 Fine-Tuning Strategy
-* **Method:** **QLoRA** (Quantized Low-Rank Adaptation).
-* **Precision:** 4-bit Normal Float (NF4) quantization with `bfloat16` compute.
-* **Adapter Config:**
-    * Rank (`r`): 64
-    * Alpha (`lora_alpha`): 128
-    * Target Modules: `all-linear` (Projections: q, k, v, o, gate, up, down).
-
-### 4.3 Training Hyperparameters
-* **Optimizer:** `paged_adamw_32bit`.
-* **Learning Rate:** `2e-4` with Cosine Scheduler.
-* **Batch Strategy:** `packing=True` enabled to maximize token throughput.
-* **Gradient Accumulation:** Effective batch size must be $\ge 16$ to ensure stability.
+* **OS:** Linux (Ubuntu 22.04 LTS recommended) or WSL2.
+* **Python:** 3.10+.
+* **Core Libraries:** `torch`, `transformers`, `peft`, `trl`, `trafilatura`, `datasketch`.
 
 ---
 
-## 5. Infrastructure & Environment
+## 📦 Installation
 
-### 5.1 Hardware
-* **Minimum Training:** 1x NVIDIA GPU with $\ge$ 24GB VRAM (RTX 3090/4090 or A10G).
-* **Preferred Training:** 1x NVIDIA A100 (40GB/80GB).
-* **Inference:** Can run on CPU (slow) or GPU ($\ge$ 12GB VRAM for 4-bit quantized inference).
+1. **Clone the Repository**
+```bash
+git clone https://github.com/your-username/Cloud-Sec-Architect-AI.git
+cd Cloud-Sec-Architect-AI
+```
 
-### 5.2 Software Stack
-* **OS:** Linux (Ubuntu 22.04 LTS).
-* **Container:** NVIDIA PyTorch Container (`nvcr.io/nvidia/pytorch:xx.xx-py3`).
-* **Tracking:** Weights & Biases (W&B) for loss visualization and artifact versioning.
+
+2. **Create Virtual Environment**
+```bash
+python -m venv venv
+source venv/bin/activate
+```
+
+
+3. **Install Dependencies**
+```bash
+pip install -r requirements.txt
+```
+
+
+4. **Hugging Face Login** (Required for Llama 3.1)
+```bash
+huggingface-cli login
+# Enter your HF Token with access to meta-llama/Meta-Llama-3.1-8B-Instruct
+```
+
+
 
 ---
 
-## 6. Evaluation & Acceptance Criteria ("The Judge")
+## 🔄 The Pipeline
 
-### 6.1 The "Golden Set"
-A curated dataset of **50 distinct architectural challenges** with known "perfect" answers (Ground Truth), covering:
-* Multi-Cloud Networking (AWS TGW vs. Azure vWAN).
-* Identity Management (OIDC, SAML federation).
-* Encryption patterns (KMS, CMK vs. Managed Keys).
+### Step 1: The Data Engine (`1_architect_harvester.py`)
 
-### 6.2 Acceptance Thresholds
-* **Training Loss:** Must converge below `0.8` without overfitting (Validation Loss diverges < 5%).
-* **Hallucination Rate:** < 5% on "Golden Set" questions (measured by human review or LLM-Judge).
-* **Format Compliance:** 100% of outputs must adhere to the specified Markdown structure.
+This script acts as the "Brain" of the operation. It crawls a curated list of professional documentation roots (AWS Prescriptive Guidance, Azure Well-Architected, NIST, etc.), extracts the main content, checks strictly for technical depth (Grade Level > 8), and removes semantic duplicates.
+
+```bash
+python 1_architect_harvester.py
+```
+
+* **Inputs:** Curated list of 15+ high-value domains (AWS, Azure, K8s, CIS, MITRE, HashiCorp).
+* **Process:** Fetch -> Extract Main Text -> Quality Filter -> Deduplicate -> Chunk.
+* **Output:** `./data_architect/architect_training_data.jsonl`
+
+### Step 2: The Training Lab (`2_train_architect.py`)
+
+Fine-tunes **Llama 3.1 8B** using **QLoRA** (Quantized Low-Rank Adaptation). This script injects a "Senior Architect" persona into the system prompt and trains the model to answer user queries with precise, compliant technical guidance.
+
+```bash
+python 2_train_architect.py
+```
+
+* **Base Model:** `meta-llama/Meta-Llama-3.1-8B-Instruct`.
+* **Technique:** 4-bit Quantization + LoRA (Rank 32).
+* **Output:** `./cloud-architect-v1` (The trained adapter weights).
+* **Training Time:** ~2-4 hours on a single RTX 3090.
+
+### Step 3: The Judge (`3_evaluate_architect.py`)
+
+Validates the model against a "Golden Set" of complex architectural questions. This ensures the model isn't just reciting facts but can reason through design trade-offs (e.g., "OIDC vs. SAML", "Private Link vs. Service Endpoints").
+
+```bash
+python 3_evaluate_architect.py
+```
 
 ---
 
-## 7. Roadmap
-* **Phase 1 (MVP):** Single-vendor focus (AWS), scraping 500 pages. Train & Validate.
-* **Phase 2 (Multi-Cloud):** Integrate Azure/GCP data. Implement `Vendor` tag in input prompt.
-* **Phase 3 (RAG Integration):** Connect the model to a Vector Database (Pinecone/Milvus) for real-time documentation lookup (reducing the need for frequent fine-tuning).
+## 📂 Project Structure
 
-### Would you like me to create the "Golden Set" of 10 initial questions for you to test the model against?
+```text
+Cloud-Sec-Architect-AI/
+├── data_architect/             # Generated datasets
+│   └── architect_training_data.jsonl
+├── cloud-architect-v1/         # Saved LoRA Adapters
+│   ├── adapter_config.json
+│   └── adapter_model.safetensors
+├── results_architect/          # Training checkpoints
+├── 1_architect_harvester.py    # Data Engine (Scraping & Cleaning)
+├── 2_train_architect.py        # Training Script (Llama 3.1 + QLoRA)
+├── 3_evaluate_architect.py     # Evaluation Script (Golden Set)
+├── requirements.txt            # Python dependencies
+└── README.md                   # Documentation
+```
+
+---
+
+## 🧠 Model Architecture Details
+
+| Component | Specification |
+| --- | --- |
+| **Base Model** | Llama 3.1 8B Instruct |
+| **Prompt Format** | Llama 3 (`< |
+| **Quantization** | 4-bit NF4 (Normal Float 4) |
+| **LoRA Rank (r)** | 32 |
+| **Target Modules** | `all-linear` (Self-Attention & MLP layers) |
+| **Context Window** | 2048 tokens (Effective training length) |
+
+---
+
+## ⚠️ Disclaimer
+
+This tool is for educational and research purposes. While trained on authoritative sources, AI models can hallucinate. Always verify architectural decisions against official vendor documentation and your organization's compliance requirements before implementation.
+
+---
+
+## 🤝 Contributing
+
+Contributions to expand the `START_URLS` list in the Data Engine or add new "Golden Questions" to the evaluator are highly encouraged! Please open a PR.

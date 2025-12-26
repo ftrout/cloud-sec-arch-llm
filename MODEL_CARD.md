@@ -254,7 +254,7 @@ The model was evaluated against a "Golden Set" of complex architectural question
 @misc{cloud-sec-architect-8b,
   author = {Trout, Frank},
   title = {cloud-sec-architect-8b: A Fine-tuned LLM for Cloud Security Architecture},
-  year = {2024},
+  year = {2025},
   publisher = {Hugging Face},
   howpublished = {\url{https://huggingface.co/ftrout/cloud-sec-architect-8b}}
 }
